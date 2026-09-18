@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trip Prep Checklist</title>
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --card: #ffffff;
+    --ink: #2b2b2b;
+    --muted: #7a7a7a;
+    --accent: #2f6f5e;
+    --accent-soft: #e5f1ed;
+    --border: #e5e2db;
+    --danger: #b3564a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 24px 16px 64px;
+  }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    margin: 0 0 4px;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 1.1rem;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card .sub {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+  .progress-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.25s ease;
+  }
+  ul.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  ul.list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  ul.list li:last-child {
+    border-bottom: none;
+  }
+  ul.list li input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  ul.list li label {
+    flex: 1;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  ul.list li.done label {
+    color: var(--muted);
+    text-decoration: line-through;
+  }
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 1.1rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 6px;
+    opacity: 0.6;
+  }
+  .remove-btn:hover { opacity: 1; }
+  .add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .add-row input[type="text"] {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+  .add-row button {
+    padding: 10px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  .add-row button:hover {
+    opacity: 0.9;
+  }
+  .empty-state {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 16px 0;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Trip Prep Checklist</h1>
+      <p>Everything to sort out before you two head out.</p>
+    </header>
+
+    <div class="card">
+      <h2>✅ To Do</h2>
+      <p class="sub">Tasks to finish before you leave</p>
+      <div class="progress-track"><div class="progress-fill" id="todo-progress"></div></div>
+      <ul class="list" id="todo-list"></ul>
+      <div class="add-row">
+        <input type="text" id="todo-input" placeholder="Add a task...">
+        <button id="todo-add">Add</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧳 Pack List</h2>
+      <p class="sub">Add items as you think of them</p>
+      <div class="progress-track"><div class="progress-fill" id="pack-progress"></div></div>
+      <ul class="list" id="pack-list"></ul>
+      <p class="empty-state" id="pack-empty">Nothing here yet — add items below.</p>
+      <div class="add-row">
+        <input type="text" id="pack-input" placeholder="Add a pack item...">
+        <button id="pack-add">Add</button>
+      </div>
+    </div>
+
+    <footer>Saved automatically in this browser.</footer>
+  </div>
+
+<script>
+  const DEFAULT_TODOS = [
+    "Clean house",
+    "Buy toiletries",
+    "Clean fridge",
+    "Ensure garbage is disposed",
+    "Get suitcases",
+    "Clean all laundry",
+    "Store A/C",
+    "Fix chairs"
+  ];
+
+  const DEFAULT_PACK = [
+    "Passports / ID",
+    "Travel insurance documents",
+    "Flight / train tickets",
+    "Wallet, cards & cash",
+    "Phone charger (N)",
+    "Phone charger (H)",
+    "Power bank",
+    "Travel plug adapter",
+    "Headphones (N)",
+    "Headphones (H)",
+    "Book / e-reader (N)",
+    "Book / e-reader (H)",
+    "Downloaded shows/music/podcasts for offline",
+    "Deck of cards / travel game",
+    "Sunglasses (N)",
+    "Sunglasses (H)",
+    "Compact umbrella x2",
+    "Rain jacket (N)",
+    "Rain jacket (H)",
+    "Waterproof shoes/boots (N)",
+    "Waterproof shoes/boots (H)",
+    "Comfortable walking shoes (N)",
+    "Comfortable walking shoes (H)",
+    "Warm layer / fleece or cardigan (N)",
+    "Warm layer / fleece or cardigan (H)",
+    "5x short sleeve tops (N)",
+    "5x short sleeve tops (H)",
+    "3x long sleeve tops/sweaters (N)",
+    "3x long sleeve tops/sweaters (H)",
+    "3x trousers/jeans (N)",
+    "3x trousers/jeans (H)",
+    "9x underwear (N)",
+    "9x underwear (H)",
+    "9x pairs socks (N)",
+    "9x pairs socks (H)",
+    "Pajamas (N)",
+    "Pajamas (H)",
+    "One nicer outfit for dinner out (N)",
+    "One nicer outfit for dinner out (H)",
+    "Toothbrush & toothpaste (N)",
+    "Toothbrush & toothpaste (H)",
+    "Deodorant (N)",
+    "Deodorant (H)",
+    "Skincare / moisturizer",
+    "Make-up (N)",
+    "Haircare (N)",
+    "Shampoo",
+    "Conditioner",
+    "Sunscreen",
+    "Medications / first aid kit",
+    "Glasses / contact lenses (if needed)",
+    "Reusable water bottle",
+    "Small daypack for daily outings",
+    "Laundry bag / detergent sheets",
+    "Ziplock bags for wet items"
+  ];
+
+  function load(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {}
+  }
+
+  let todos = load("trip-todos", DEFAULT_TODOS.map(text => ({ text, done: false })));
+  let packItems = load("trip-pack", DEFAULT_PACK.map(text => ({ text, done: false })));
+
+  function render(listId, progressId, items, storageKey, emptyId) {
+    const listEl = document.getElementById(listId);
+    listEl.innerHTML = "";
+    items.forEach((item, i) => {
+      const li = document.createElement("li");
+      if (item.done) li.classList.add("done");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = item.done;
+      checkbox.id = `${storageKey}-${i}`;
+      checkbox.addEventListener("change", () => {
+        items[i].done = checkbox.checked;
+        save(storageKey, items);
+        render(listId, progressId, items, storageKey, emptyId);
+      });
+
+      const label = document.createElement("label");
+      label.htmlFor = checkbox.id;
+      label.textContent = item.text;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "remove-btn";
+      removeBtn.textContent = "✕";
+      removeBtn.title = "Remove";
+      removeBtn.addEventListener("click", () => {
+        items.splice(i, 1);
+        save(storageKey, items);
+        render(listId, progressId, items, storageKey, emptyId);
+      });
+
+      li.appendChild(checkbox);
+      li.appendChild(label);
+      li.appendChild(removeBtn);
+      listEl.appendChild(li);
+    });
+
+    const progressEl = document.getElementById(progressId);
+    const doneCount = items.filter(i => i.done).length;
+    const pct = items.length ? Math.round((doneCount / items.length) * 100) : 0;
+    progressEl.style.width = pct + "%";
+
+    if (emptyId) {
+      document.getElementById(emptyId).style.display = items.length ? "none" : "block";
+    }
+  }
+
+  function addItem(inputId, items, storageKey, listId, progressId, emptyId) {
+    const input = document.getElementById(inputId);
+    const text = input.value.trim();
+    if (!text) return;
+    items.push({ text, done: false });
+    save(storageKey, items);
+    input.value = "";
+    render(listId, progressId, items, storageKey, emptyId);
+  }
+
+  document.getElementById("todo-add").addEventListener("click", () => {
+    addItem("todo-input", todos, "trip-todos", "todo-list", "todo-progress", null);
+  });
+  document.getElementById("todo-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") addItem("todo-input", todos, "trip-todos", "todo-list", "todo-progress", null);
+  });
+
+  document.getElementById("pack-add").addEventListener("click", () => {
+    addItem("pack-input", packItems, "trip-pack", "pack-list", "pack-progress", "pack-empty");
+  });
+  document.getElementById("pack-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") addItem("pack-input", packItems, "trip-pack", "pack-list", "pack-progress", "pack-empty");
+  });
+
+  render("todo-list", "todo-progress", todos, "trip-todos", null);
+  render("pack-list", "pack-progress", packItems, "trip-pack", "pack-empty");
+</script>
+</body>
+</html>
