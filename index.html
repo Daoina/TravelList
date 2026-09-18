@@ -182,126 +182,36 @@
       </div>
     </div>
 
-    <footer>Saved automatically in this browser.</footer>
+    <footer id="sync-status">Connecting live sync…</footer>
   </div>
 
 <script>
-  const DEFAULT_TODOS = [
-    "Clean house",
-    "Buy toiletries",
-    "Clean fridge",
-    "Ensure garbage is disposed",
-    "Get suitcases",
-    "Clean all laundry",
-    "Store A/C",
-    "Fix chairs"
-  ];
-
-  const DEFAULT_PACK = [
-    "Passports / ID",
-    "Travel insurance documents",
-    "Flight / train tickets",
-    "Wallet, cards & cash",
-    "Phone charger (N)",
-    "Phone charger (H)",
-    "Power bank",
-    "Travel plug adapter",
-    "Headphones (N)",
-    "Headphones (H)",
-    "Book / e-reader (N)",
-    "Book / e-reader (H)",
-    "Downloaded shows/music/podcasts for offline",
-    "Deck of cards / travel game",
-    "Sunglasses (N)",
-    "Sunglasses (H)",
-    "Compact umbrella x2",
-    "Rain jacket (N)",
-    "Rain jacket (H)",
-    "Waterproof shoes/boots (N)",
-    "Waterproof shoes/boots (H)",
-    "Comfortable walking shoes (N)",
-    "Comfortable walking shoes (H)",
-    "Warm layer / fleece or cardigan (N)",
-    "Warm layer / fleece or cardigan (H)",
-    "5x short sleeve tops (N)",
-    "5x short sleeve tops (H)",
-    "3x long sleeve tops/sweaters (N)",
-    "3x long sleeve tops/sweaters (H)",
-    "3x trousers/jeans (N)",
-    "3x trousers/jeans (H)",
-    "9x underwear (N)",
-    "9x underwear (H)",
-    "9x pairs socks (N)",
-    "9x pairs socks (H)",
-    "Pajamas (N)",
-    "Pajamas (H)",
-    "One nicer outfit for dinner out (N)",
-    "One nicer outfit for dinner out (H)",
-    "Toothbrush & toothpaste (N)",
-    "Toothbrush & toothpaste (H)",
-    "Deodorant (N)",
-    "Deodorant (H)",
-    "Skincare / moisturizer",
-    "Make-up (N)",
-    "Haircare (N)",
-    "Shampoo",
-    "Conditioner",
-    "Sunscreen",
-    "Medications / first aid kit",
-    "Glasses / contact lenses (if needed)",
-    "Reusable water bottle",
-    "Small daypack for daily outings",
-    "Laundry bag / detergent sheets",
-    "Ziplock bags for wet items"
-  ];
-
-  function load(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (e) {
-      return fallback;
-    }
-  }
-
-  function save(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {}
-  }
-
-  let todos = load("trip-todos", DEFAULT_TODOS.map(text => ({ text, done: false })));
-  let packItems = load("trip-pack", DEFAULT_PACK.map(text => ({ text, done: false })));
-
-  function render(listId, progressId, items, storageKey, emptyId) {
+  function renderCollection(docs, coll, listId, progressId, emptyId) {
     const listEl = document.getElementById(listId);
     listEl.innerHTML = "";
-    items.forEach((item, i) => {
+    docs.forEach(doc => {
+      const data = doc.data();
       const li = document.createElement("li");
-      if (item.done) li.classList.add("done");
+      if (data.done) li.classList.add("done");
 
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
-      checkbox.checked = item.done;
-      checkbox.id = `${storageKey}-${i}`;
+      checkbox.checked = !!data.done;
+      checkbox.id = `${listId}-${doc.id}`;
       checkbox.addEventListener("change", () => {
-        items[i].done = checkbox.checked;
-        save(storageKey, items);
-        render(listId, progressId, items, storageKey, emptyId);
+        coll.doc(doc.id).update({ done: checkbox.checked }).catch(err => console.error(err));
       });
 
       const label = document.createElement("label");
       label.htmlFor = checkbox.id;
-      label.textContent = item.text;
+      label.textContent = data.text;
 
       const removeBtn = document.createElement("button");
       removeBtn.className = "remove-btn";
       removeBtn.textContent = "✕";
       removeBtn.title = "Remove";
       removeBtn.addEventListener("click", () => {
-        items.splice(i, 1);
-        save(storageKey, items);
-        render(listId, progressId, items, storageKey, emptyId);
+        coll.doc(doc.id).delete().catch(err => console.error(err));
       });
 
       li.appendChild(checkbox);
@@ -311,41 +221,64 @@
     });
 
     const progressEl = document.getElementById(progressId);
-    const doneCount = items.filter(i => i.done).length;
-    const pct = items.length ? Math.round((doneCount / items.length) * 100) : 0;
+    const doneCount = docs.filter(d => d.data().done).length;
+    const pct = docs.length ? Math.round((doneCount / docs.length) * 100) : 0;
     progressEl.style.width = pct + "%";
 
     if (emptyId) {
-      document.getElementById(emptyId).style.display = items.length ? "none" : "block";
+      document.getElementById(emptyId).style.display = docs.length ? "none" : "block";
     }
   }
 
-  function addItem(inputId, items, storageKey, listId, progressId, emptyId) {
+  function wireAdd(coll, inputId, buttonId) {
     const input = document.getElementById(inputId);
-    const text = input.value.trim();
-    if (!text) return;
-    items.push({ text, done: false });
-    save(storageKey, items);
-    input.value = "";
-    render(listId, progressId, items, storageKey, emptyId);
+    const submit = () => {
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = "";
+      coll.add({ text, done: false, order: Date.now() }).catch(err => console.error(err));
+    };
+    document.getElementById(buttonId).addEventListener("click", submit);
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") submit();
+    });
   }
 
-  document.getElementById("todo-add").addEventListener("click", () => {
-    addItem("todo-input", todos, "trip-todos", "todo-list", "todo-progress", null);
-  });
-  document.getElementById("todo-input").addEventListener("keydown", e => {
-    if (e.key === "Enter") addItem("todo-input", todos, "trip-todos", "todo-list", "todo-progress", null);
-  });
+  async function init() {
+    const statusEl = document.getElementById("sync-status");
+    const db = await claude.use("db");
 
-  document.getElementById("pack-add").addEventListener("click", () => {
-    addItem("pack-input", packItems, "trip-pack", "pack-list", "pack-progress", "pack-empty");
-  });
-  document.getElementById("pack-input").addEventListener("keydown", e => {
-    if (e.key === "Enter") addItem("pack-input", packItems, "trip-pack", "pack-list", "pack-progress", "pack-empty");
-  });
+    if (!db) {
+      statusEl.textContent = "Live sync isn't available in this view.";
+      return;
+    }
 
-  render("todo-list", "todo-progress", todos, "trip-todos", null);
-  render("pack-list", "pack-progress", packItems, "trip-pack", "pack-empty");
+    const todosColl = db.collection("todos");
+    const packColl = db.collection("pack");
+
+    todosColl.orderBy("order").onSnapshot(
+      snap => renderCollection(snap.docs, todosColl, "todo-list", "todo-progress", null),
+      err => {
+        console.error("todos db error", err);
+        statusEl.textContent = "Live sync error — try reloading.";
+      }
+    );
+
+    packColl.orderBy("order").onSnapshot(
+      snap => renderCollection(snap.docs, packColl, "pack-list", "pack-progress", "pack-empty"),
+      err => {
+        console.error("pack db error", err);
+        statusEl.textContent = "Live sync error — try reloading.";
+      }
+    );
+
+    wireAdd(todosColl, "todo-input", "todo-add");
+    wireAdd(packColl, "pack-input", "pack-add");
+
+    statusEl.textContent = "Synced live — everyone who opens this sees the same list.";
+  }
+
+  init();
 </script>
 </body>
 </html>
