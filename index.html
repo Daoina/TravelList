@@ -197,6 +197,54 @@
     "Fix chairs"
   ];
 
+  const DEFAULT_PACK = [
+    "Passports / ID",
+    "Travel insurance documents",
+    "Flight / train tickets",
+    "Wallet, cards & cash",
+    "Phone charger (N)",
+    "Phone charger (H)",
+    "Power bank",
+    "Travel plug adapter",
+    "Sunglasses (N)",
+    "Sunglasses (H)",
+    "Compact umbrella x2",
+    "Rain jacket (N)",
+    "Rain jacket (H)",
+    "Waterproof shoes/boots (N)",
+    "Waterproof shoes/boots (H)",
+    "Comfortable walking shoes (N)",
+    "Comfortable walking shoes (H)",
+    "Warm layer / fleece or cardigan (N)",
+    "Warm layer / fleece or cardigan (H)",
+    "5x short sleeve tops (N)",
+    "5x short sleeve tops (H)",
+    "3x long sleeve tops/sweaters (N)",
+    "3x long sleeve tops/sweaters (H)",
+    "3x trousers/jeans (N)",
+    "3x trousers/jeans (H)",
+    "9x underwear (N)",
+    "9x underwear (H)",
+    "9x pairs socks (N)",
+    "9x pairs socks (H)",
+    "Pajamas (N)",
+    "Pajamas (H)",
+    "One nicer outfit for dinner out (N)",
+    "One nicer outfit for dinner out (H)",
+    "Toothbrush & toothpaste (N)",
+    "Toothbrush & toothpaste (H)",
+    "Deodorant (N)",
+    "Deodorant (H)",
+    "Skincare / moisturizer",
+    "Sunscreen",
+    "Medications / first aid kit",
+    "Glasses / contact lenses (if needed)",
+    "Reusable water bottle",
+    "Small daypack for daily outings",
+    "Laundry bag / detergent sheets",
+    "Ziplock bags for wet items"
+  ];
+
   function load(key, fallback) {
     try {
       const raw = localStorage.getItem(key);
@@ -213,7 +261,7 @@
   }
 
   let todos = load("trip-todos", DEFAULT_TODOS.map(text => ({ text, done: false })));
-  let packItems = load("trip-pack", []);
+  let packItems = load("trip-pack", DEFAULT_PACK.map(text => ({ text, done: false })));
 
   function render(listId, progressId, items, storageKey, emptyId) {
     const listEl = document.getElementById(listId);
